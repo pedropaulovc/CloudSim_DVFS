@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<simulation>
+<datacenters>
+    <datacenter>
+        <arch>x86</arch>
+	<os>Linux</os>
+        <vmm>Xen</vmm>
+	<timezone>10.0</timezone>
+        <cost>3.0</cost>
+	<costPerMem>0.05</costPerMem>
+        <costPerStorage>0.001</costPerStorage>
+	<costPerBw>0.0</costPerBw>
+
+        <host>
+            <ram>10000</ram>
+            <storage>1000000</storage>
+            <bw>300000</bw>
+            <maxP>250</maxP>
+            <staticPP>0.7</staticPP>
+            <cpus>
+		<cpu>
+			<num>1</num>
+			<governor>performance</governor>		
+		</cpu>
+  	    </cpus>
+            <mips>100000</mips>
+		    <onoff>true</onoff>
+            <dvfsenable>true</dvfsenable>  <!-- true / false -->
+            <cpufrequencies> <!-- as a percentage of the maximum frequency ! -->
+		<f1>100.0</f1> <!-- MAXIMUM FREQUENCY -->
+		<f2>88.24</f2>
+		<f3>70.59</f3>
+		<f4>58.82</f4>
+		<f5>47.06</f5>
+	    </cpufrequencies>
+	    <dvfs>	
+		<mode>
+			<name>ondemand</name>
+			<up_threshold>95</up_threshold>
+			<sampling_down_factor>1</sampling_down_factor>
+		</mode>
+		<mode>
+			<name>conservative</name>
+			<up_threshold>75</up_threshold>
+			<down_threshold>35</down_threshold>
+			<enablefreqstep>0</enablefreqstep> <!-- 0 = not actived,  1 = activated -->
+			<freqstep>5</freqstep>
+
+		</mode>
+		<mode>
+			<name>userspace</name>
+			<frequency>4</frequency> <!-- Index of the frequency you want to use , 3 means f3 will be use-->
+		</mode>
+	  </dvfs>
+        </host>
+
+
+<!-- HOST FOR NETWORKD BANDWITH -->
+	<host>
+            <ram>10000</ram>
+            <storage>1000000</storage>
+            <bw>300000</bw>
+            <maxP>250</maxP>
+            <staticPP>0.7</staticPP>
+            <cpus>
+		<cpu>
+			<num>1</num>
+			<governor>performance</governor>		
+		</cpu>
+  	    </cpus>
+            <mips>20000</mips>
+		    <onoff>true</onoff>
+            <dvfsenable>false</dvfsenable>  <!-- true / false -->
+            <cpufrequencies> <!-- as a percentage of the maximum frequency ! -->
+		<f1>100.0</f1> <!-- MAXIMUM FREQUENCY -->
+		<f2>88.24</f2>
+		<f3>70.59</f3>
+		<f4>58.82</f4>
+		<f5>47.06</f5>
+	    </cpufrequencies>
+	    <dvfs>	
+		<mode>
+			<name>ondemand</name>
+			<up_threshold>95</up_threshold>
+			<sampling_down_factor>1</sampling_down_factor>
+		</mode>
+		<mode>
+			<name>conservative</name>
+			<up_threshold>75</up_threshold>
+			<down_threshold>35</down_threshold>
+			<enablefreqstep>0</enablefreqstep> <!-- 0 = not actived,  1 = activated -->
+			<freqstep>5</freqstep>
+
+		</mode>
+		<mode>
+			<name>userspace</name>
+			<frequency>4</frequency> <!-- Index of the frequency you want to use , 3 means f3 will be use-->
+		</mode>
+	  </dvfs>
+        </host>
+
+<!-- HOST FOR SIMULATE I/O -->
+
+<host>
+            <ram>10000</ram>
+            <storage>1000000</storage>
+            <bw>300000</bw>
+            <maxP>250</maxP>
+            <staticPP>0.7</staticPP>
+            <cpus>
+		<cpu>
+			<num>1</num>
+			<governor>performance</governor>		
+		</cpu>
+  	    </cpus>
+            <mips>1000000</mips>
+	  		<onoff>true</onoff>
+            <dvfsenable>false</dvfsenable>  <!-- true / false -->
+            <cpufrequencies> <!-- as a percentage of the maximum frequency ! -->
+		<f1>100.0</f1> <!-- MAXIMUM FREQUENCY -->
+		<f2>88.24</f2>
+		<f3>70.59</f3>
+		<f4>58.82</f4>
+		<f5>47.06</f5>
+	    </cpufrequencies>
+	    <dvfs>	
+		<mode>
+			<name>ondemand</name>
+			<up_threshold>95</up_threshold>
+			<sampling_down_factor>1</sampling_down_factor>
+		</mode>
+		<mode>
+			<name>conservative</name>
+			<up_threshold>75</up_threshold>
+			<down_threshold>35</down_threshold>
+			<enablefreqstep>0</enablefreqstep> <!-- 0 = not actived,  1 = activated -->
+			<freqstep>5</freqstep>
+
+		</mode>
+		<mode>
+			<name>userspace</name>
+			<frequency>4</frequency> <!-- Index of the frequency you want to use , 3 means f3 will be use-->
+		</mode>
+	  </dvfs>
+        </host>
+
+
+   </datacenter>
+</datacenters>
+
+
+<vms>
+    <vm>
+        <mips>10000</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm>
+<!-- VM NETWORK -->
+    <vm>
+        <mips>1000</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm> 
+<!-- VM DISK -->
+    <vm>
+        <mips>1000</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm> 
+</vms>
+
+<cloudlets>
+    <cloudlet>
+-        <length>325240</length> <!--PERFO --> 
+<!--	<length>345000</length>  ONDEMAND  -->  
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+<!-- CLOOUDLET NETWORK -->
+    <cloudlet>
+    <length>53905</length>  <!--PERFO -->
+<!--	<length>90600</length>  ONDEMAND  -->  
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+<!-- CLOOUDLET DISK -->
+    <cloudlet>
+    <length>59405</length>  <!-- PERFO -->
+<!--    	<length>64600</length>  ONDEMAND **** ne pas oublier de changer les valeurs de power ds le model DISK à 140W car freq MIN durant I/O en OnD-->
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+</cloudlets>
+</simulation>
+

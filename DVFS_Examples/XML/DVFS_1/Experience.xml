@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<simulation>
+<datacenters>
+    <datacenter>
+        <arch>x86</arch>
+	<os>Linux</os>
+        <vmm>Xen</vmm>
+	<timezone>10.0</timezone>
+        <cost>3.0</cost>
+	<costPerMem>0.05</costPerMem>
+        <costPerStorage>0.001</costPerStorage>
+	<costPerBw>0.0</costPerBw>
+
+        <host>
+            <ram>10000</ram>
+            <storage>1000000</storage>
+            <bw>300000</bw>
+            <maxP>250</maxP>
+            <staticPP>0.7</staticPP>
+            <cpus>
+		<cpu>
+			<num>1</num>
+			<governor>powersave</governor>		
+		</cpu>
+  	    </cpus>
+            <mips>2500</mips>
+            <dvfsenable>true</dvfsenable>  <!-- true / false -->
+            <cpufrequencies> <!-- as a percentage of the maximum frequency ! -->
+		<f1>100.0</f1> <!-- MAXIMUM FREQUENCY -->
+		<f2>89.89</f2>
+		<f3>79.89</f3>
+		<f4>69.93</f4>
+		<f5>59.925</f5>
+	    </cpufrequencies>
+	    <dvfs>	
+		<mode>
+			<name>ondemand</name>
+			<up_threshold>95</up_threshold>
+			<sampling_down_factor>100</sampling_down_factor>
+		</mode>
+		<mode>
+			<name>conservative</name>
+			<up_threshold>75</up_threshold>
+			<down_threshold>35</down_threshold>
+			<enablefreqstep>0</enablefreqstep> <!-- 0 = not actived,  1 = activated -->
+			<freqstep>5</freqstep>
+
+		</mode>
+		<mode>
+			<name>userspace</name>
+			<frequency>2</frequency> <!-- Index of the frequency you want to use , 3 means f3 will be use-->
+		</mode>
+	  </dvfs>
+        </host>
+   </datacenter>
+</datacenters>
+
+
+<vms>
+    <vm>
+        <mips>50</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm>
+    <vm>
+        <mips>75</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm>
+    <vm>
+        <mips>150</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm>
+    <vm>
+        <mips>75</mips>
+        <cpu>1</cpu>
+        <ram>128</ram>
+        <bw>2500</bw>
+        <size>2500</size>
+        <vmm>Xen</vmm>
+    </vm>
+
+</vms>
+
+<cloudlets>
+    <cloudlet>
+        <length>5000</length>
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+    <cloudlet>
+        <length>4486</length>
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+    <cloudlet>
+        <length>299</length>
+	<pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+    <cloudlet>
+        <length>2315</length>
+        <pes>1</pes>
+	<filesize>300</filesize>
+	<outputsize>300</outputsize>
+    </cloudlet>
+</cloudlets>
+</simulation>
+

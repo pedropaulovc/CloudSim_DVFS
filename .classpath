@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/algs-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/cglib-nodep-2.2.3.jar"/>
+	<classpathentry kind="lib" path="lib/easymock-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/flanagan.jar"/>
+	<classpathentry kind="lib" path="lib/jdom-1.1.2.jar"/>
+	<classpathentry kind="lib" path="lib/objenesis-2.1.jar"/>
+	<classpathentry kind="lib" path="lib/stdlib-1.0.jar"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="DVFS_Examples"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
