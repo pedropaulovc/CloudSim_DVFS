@@ -406,7 +406,7 @@ public class WorkflowEngine extends SimEntity{
              name_xml+="_"+modedvfs;
          }
          else
-             name_xml+="Fmax";
+             name_xml+="_Fmax";
          
          // mode pooling ON
          if(ener.isPooling())
@@ -416,8 +416,8 @@ public class WorkflowEngine extends SimEntity{
          sumEner=0;
             FileWriter fw = null;
         try {
-            fw = new FileWriter(name_xml + "energy_");
-            fw.write("taskId / start Time / finish time / length / energy / vmId / dependencies" + '\n');
+            fw = new FileWriter(name_xml + "_energy");
+            fw.write("taskId\tstartTime\tfinishTime\tlength\tenergy\tvmId\tdependencies" + '\n');
         } catch (IOException ex) {
             ex.printStackTrace();
         }
