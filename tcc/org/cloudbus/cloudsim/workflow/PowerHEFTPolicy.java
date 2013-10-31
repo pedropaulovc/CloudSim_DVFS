@@ -3,6 +3,7 @@ package org.cloudbus.cloudsim.workflow;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,6 +14,7 @@ import java.util.Map.Entry;
 import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
+import org.cloudbus.cloudsim.power.models.PowerModelSpecPower_REIMS;
 
 public class PowerHEFTPolicy extends Policy {
 	private Map<Task, Map<Vm, Double>> computationCosts;
@@ -27,6 +29,8 @@ public class PowerHEFTPolicy extends Policy {
 	private List<Vm> vmList;
 	private int nextVMId = 0;
 	private List<Vm> sortedVmOffers;
+	private Map<Vm, Integer> indexFreq;
+	private long availableExecTime;
 
 	private class Event {
 		public double start;
@@ -60,16 +64,19 @@ public class PowerHEFTPolicy extends Policy {
 		earliestFinishTimes = new HashMap<>();
 		schedules = new HashMap<>();
 		vmList = new ArrayList<>();
+		indexFreq = new HashMap<>();
 	}
 
 	@Override
 	public void doScheduling(long availableExecTime, VMOffers vmOffers) {
 		Log.printLine("Power HEFT planner running with " + tasks.size() + " tasks.");
 
+		sortedVmOffers = sortVmOfferList();
+		this.availableExecTime = availableExecTime;
 		averageBandwidth = calculateAverageBandwidth();
 
 		// VM instantiation phase
-		instantiateVM(sortedVmOffers.get(sortedVmOffers.size() - 1), availableExecTime); // Fastest
+		instantiateVM(sortedVmOffers.get(sortedVmOffers.size() - 1), sortedVmOffers.size() - 1); // Fastest
 
 		// Prioritization phase
 		updateComputationCosts();
@@ -80,61 +87,74 @@ public class PowerHEFTPolicy extends Policy {
 		for (Task task : rank.keySet()) {
 			taskRank.add(new TaskRank(task));
 		}
-		
+
 		Task next;
-		while(taskRank.size() > 0){
+		while (taskRank.size() > 0) {
 			// Sorting in non-DESCENDING order of rank
 			Collections.sort(taskRank);
-			
-			next = taskRank.remove(taskRank.size() - 1).task;
+
 			Vm bestVm = vmList.get(0);
 			boolean isNewVm = false;
 			double bestEnergy = Double.MAX_VALUE;
-			
-			for(Vm vm: vmList){
+			int bestIndex = -1;
+
+			for (Vm vm : vmList) {
+				next = taskRank.remove(taskRank.size() - 1).task;
 				allocateTask(next, vm);
 				double energy = simulateAllocation(new ArrayList<>(taskRank));
-				//deallocateTask(next, vm);
+				deallocateTask(next, vm);
 				taskRank.add(new TaskRank(next));
-				
-//				if(energy < bestEnergy){
-//					bestVm = vm;
-//					bestEnergy = energy;
-//				}
+
+				if (energy < bestEnergy) {
+					bestVm = vm;
+					bestEnergy = energy;
+				}
 			}
-			
-			for(Vm option: sortedVmOffers){
-				Vm newVm = instantiateVM(option, availableExecTime);
+
+			for (int i = 0; i < sortedVmOffers.size(); i++) {
+				Vm option = sortedVmOffers.get(i);
+
+				Vm newVm = instantiateVM(option, i);
+
 				updateComputationCosts();
 				updateTransferCosts();
 				Collections.sort(taskRank);
+
 				next = taskRank.remove(taskRank.size() - 1).task;
+
 				allocateTask(next, newVm);
-				//double energy = simulateAllocation();
-				//deallocateTask(next, newVm);
-				//deinstantiateVM(newVm);
-				//taskRank.add(new TaskRank(next));
-				
-//				if(energy < bestEnergy){
-//					bestVm = option;
-//					bestEnergy = energy;
-//					isNewVm = true;
-//				}
+
+				double energy = simulateAllocation(new ArrayList<>(taskRank));
+
+				deallocateTask(next, newVm);
+				deinstantiateVM(newVm);
+				taskRank.add(new TaskRank(next));
+
+				if (energy < bestEnergy) {
+					bestVm = option;
+					bestIndex = i;
+					bestEnergy = energy;
+					isNewVm = true;
+				}
 			}
 			
-			if(isNewVm){
-				Vm newVm = instantiateVM(bestVm, availableExecTime);
+			if (isNewVm) {
+				bestVm = instantiateVM(bestVm, bestIndex);
+
 				updateComputationCosts();
 				updateTransferCosts();
 				Collections.sort(taskRank);
-				next = taskRank.remove(taskRank.size() - 1).task;
-				allocateTask(next, newVm);
 			}
-		}
+			
+			next = taskRank.remove(taskRank.size() - 1).task;
+			allocateTask(next, bestVm);
+		}//End for
+		
+		setDataDependencies();
 
 	}
 
-	private Vm instantiateVM(Vm instance, long availableExecTime) {
+	private Vm instantiateVM(Vm instance, int vmIndexFreq) {
 		Vm newVm = new Vm(nextVMId++, ownerId, instance.getMips(), instance.getNumberOfPes(),
 				instance.getRam(), instance.getBw(), instance.getSize(), "",
 				new CloudletSchedulerTimeShared());
@@ -143,24 +163,22 @@ public class PowerHEFTPolicy extends Policy {
 		provisioningInfo.add(new ProvisionedVm(newVm, 0, availableExecTime, cost));
 
 		schedulingTable.put(newVm.getId(), new ArrayList<Task>());
+		schedules.put(newVm, new ArrayList<Event>());
 		vmList.add(newVm);
+		indexFreq.put(newVm, vmIndexFreq);
 		return newVm;
 	}
 
-	private int calculateNumberOfPaths(Task task, Map<Task, Integer> memory) {
-		int numberPaths = 0;
+	private void deinstantiateVM(Vm vm) {
+		int i = 0;
+		while (provisioningInfo.get(i).getVm().getId() != vm.getId())
+			i++;
 
-		if (memory.containsKey(task))
-			return memory.get(task);
-
-		if (task.getChildren().size() == 0)
-			numberPaths = 1;
-
-		for (Task child : task.getChildren())
-			numberPaths += calculateNumberOfPaths(child, memory);
-
-		memory.put(task, numberPaths);
-		return numberPaths;
+		schedulingTable.remove(vm.getId());
+		schedules.remove(vm);
+		provisioningInfo.remove(i);
+		vmList.remove(vm);
+		indexFreq.remove(vm);
 	}
 
 	/**
@@ -294,58 +312,110 @@ public class PowerHEFTPolicy extends Policy {
 		return rank.get(task);
 	}
 
-	/**
-	 * Allocates all tasks to be scheduled in non-ascending order of schedule.
-	 */
 	private Double simulateAllocation(List<TaskRank> toSchedule) {
 		Task next;
-		for(int i = toSchedule.size() - 1; i >= 0; i--){
+		for (int i = toSchedule.size() - 1; i >= 0; i--) {
 			next = toSchedule.get(i).task;
-			
+
 			allocateTask(next);
 		}
-		
-//		double energy = estimateEnergyConsumption();
-		
-		for(TaskRank tr : toSchedule){
-//			deallocateTask(tr.task);
+
+		double energy = estimateEnergyConsumption();
+
+		for (TaskRank tr : toSchedule) {
+			deallocateTask(tr.task);
 		}
-		
-		return 0.0;
+
+		return energy;
+	}
+
+	private void deallocateTask(Task task) {
+		Vm vm = getVmById(task.getVmId());
+		deallocateTask(task, vm);
+	}
+
+	private void deallocateTask(Task task, Vm vm) {
+		List<Event> schedule = schedules.get(vm);
+		int i = 0;
+		while (schedule.get(i).task.getId() != task.getId())
+			i++;
+
+		schedule.remove(i);
+
+		schedulingTable.get(vm.getId()).remove(task);
+
+		earliestFinishTimes.remove(task);
+		task.setVmId(-1);
+		task.setOptIndexFreq(-1);
+	}
+
+	private Vm getVmById(int vmId) {
+		for (Vm vm : vmList)
+			if (vm.getId() == vmId)
+				return vm;
+		return null;
+	}
+
+	private double estimateEnergyConsumption() {
+		int vmIndexFreq;
+		long length = 0;
+		double energy = 0.0;
+		double execTime;
+		double powerFull, powerIdle;
+		PowerModelSpecPower_REIMS model = new PowerModelSpecPower_REIMS();
+
+		for (Vm vm : schedules.keySet()) {
+			vmIndexFreq = indexFreq.get(vm);
+
+			for (Event e : schedules.get(vm)) {
+				length += e.task.getCloudlet().getCloudletTotalLength();
+			}
+
+			execTime = length / vm.getMips();
+
+			powerFull = model.getPMax(vmIndexFreq);
+			powerIdle = model.getPMin(vmIndexFreq);
+
+			double E = execTime * powerFull + (availableExecTime - execTime) * powerIdle;
+			energy += E / 3600;
+		}
+
+		return energy;
 	}
 
 	private void allocateTask(Task task) {
-        Vm chosenVM = null;
-        double earliestFinishTime = Double.MAX_VALUE;
-        double bestReadyTime = 0.0;
-        double finishTime;
+		Vm chosenVM = null;
+		double earliestFinishTime = Double.MAX_VALUE;
+		double bestReadyTime = 0.0;
+		double finishTime;
 
-        for (Vm vm : vmList) {
-                double minReadyTime = 0.0;
+		for (Vm vm : vmList) {
+			double minReadyTime = 0.0;
 
-                for (Task parent : task.getParents()) {
-                        double readyTime = earliestFinishTimes.get(parent);
-                        if (parent.getVmId() != vm.getId())
-                                readyTime += transferCosts.get(parent).get(task);
+			for (Task parent : task.getParents()) {
+				double readyTime = earliestFinishTimes.get(parent);
+				if (parent.getVmId() != vm.getId())
+					readyTime += transferCosts.get(parent).get(task);
 
-                        minReadyTime = Math.max(minReadyTime, readyTime);
-                }
+				minReadyTime = Math.max(minReadyTime, readyTime);
+			}
 
-                finishTime = findFinishTime(task, vm, minReadyTime, false);
+			finishTime = findFinishTime(task, vm, minReadyTime, false);
 
-                if (finishTime < earliestFinishTime) {
-                        bestReadyTime = minReadyTime;
-                        earliestFinishTime = finishTime;
-                        chosenVM = vm;
-                }
-        }
+			if (finishTime < earliestFinishTime) {
+				bestReadyTime = minReadyTime;
+				earliestFinishTime = finishTime;
+				chosenVM = vm;
+			}
+		}
 
-        findFinishTime(task, chosenVM, bestReadyTime, true);
-        earliestFinishTimes.put(task, earliestFinishTime);
+		findFinishTime(task, chosenVM, bestReadyTime, true);
+		earliestFinishTimes.put(task, earliestFinishTime);
 
-        task.setVmId(chosenVM.getId());
-    }
-    
+		task.setVmId(chosenVM.getId());
+		task.setOptIndexFreq(indexFreq.get(chosenVM));
+	}
+
 	/**
 	 * Schedules the task given in one of the VMs minimizing the earliest finish
 	 * time
@@ -371,6 +441,7 @@ public class PowerHEFTPolicy extends Policy {
 		earliestFinishTimes.put(task, finishTime);
 
 		task.setVmId(vm.getId());
+		task.setOptIndexFreq(indexFreq.get(vm));
 	}
 
 	/**
@@ -395,8 +466,10 @@ public class PowerHEFTPolicy extends Policy {
 		int pos;
 
 		if (sched.size() == 0) {
-			if (occupySlot)
+			if (occupySlot) {
 				sched.add(new Event(readyTime, readyTime + computationCost, task));
+				schedulingTable.get(vm.getId()).add(task);
+			}
 			return readyTime + computationCost;
 		}
 
@@ -412,8 +485,10 @@ public class PowerHEFTPolicy extends Policy {
 				start = sched.get(0).finish;
 			}
 
-			if (occupySlot)
+			if (occupySlot) {
 				sched.add(pos, new Event(start, start + computationCost, task));
+				schedulingTable.get(vm.getId()).add(task);
+			}
 			return start + computationCost;
 		}
 
@@ -450,13 +525,34 @@ public class PowerHEFTPolicy extends Policy {
 			pos = 0;
 			start = readyTime;
 
-			if (occupySlot)
+			if (occupySlot) {
 				sched.add(pos, new Event(start, start + computationCost, task));
+				schedulingTable.get(vm.getId()).add(task);
+			}
 			return start + computationCost;
 		}
-		if (occupySlot)
+		if (occupySlot) {
 			sched.add(pos, new Event(start, finish, task));
+			schedulingTable.get(vm.getId()).add(task);
+		}
 		return finish;
+	}
+
+	private void setDataDependencies() {
+		for (Task t : tasks) {
+			for (DataItem data : t.getDataDependencies()) {
+				if (!dataRequiredLocation.containsKey(data.getId())) {
+					dataRequiredLocation.put(data.getId(), new HashSet<Integer>());
+				}
+				dataRequiredLocation.get(data.getId()).add(t.getVmId());
+			}
+
+			for (DataItem data : t.getOutput()) {
+				if (!dataRequiredLocation.containsKey(data.getId())) {
+					dataRequiredLocation.put(data.getId(), new HashSet<Integer>());
+				}
+			}
+		}
 	}
 
 	private List<Vm> sortVmOfferList() {
