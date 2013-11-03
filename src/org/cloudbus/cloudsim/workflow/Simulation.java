@@ -1,5 +1,6 @@
 package org.cloudbus.cloudsim.workflow;
 
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -81,7 +82,17 @@ public class Simulation {
 
 			CloudSim.startSimulation();
 			engine.printExecutionSummary();
-			engine.computeEnergy();
+			double energy = engine.computeEnergy();
+			
+			FileWriter fw = new FileWriter("/home/pedropaulovc/CloudSim_DVFS_Results", true);
+//			fw.write("policy,dag,optimize,modedvfs,energy,endTime\n");
+			fw.write(Properties.SCHEDULING_POLICY.getProperty() + ",");
+			fw.write(Properties.DAG_FILE.getProperty() + ",");
+			fw.write(Properties.OPTIMIZE.getProperty() + ",");
+			fw.write(Properties.MODEDVFS.getProperty() + ",");
+			fw.write(energy + ",");
+			fw.write(engine.getEndTime() + "\n");
+			fw.close();
                         
               //          Log.printLine(String.format("Power Sum :  %.8f W", datacenter.getPower() ));                    
                         

@@ -394,7 +394,7 @@ public class WorkflowEngine extends SimEntity{
 	}
 
 
-     public void computeEnergy()
+     public double computeEnergy()
      {
          DecimalFormat dft = new DecimalFormat("#####.##");
          TestEstimationEnergy ener = new TestEstimationEnergy();
@@ -456,9 +456,13 @@ public class WorkflowEngine extends SimEntity{
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+        
+        return sumEner;
         }
   
-    
+    public double getEndTime(){
+    	return endTime;
+    }
 
 }
 class WETransmission {

@@ -27,6 +27,7 @@ public class PowerHEFTPolicy extends Policy {
 	private double averageBandwidth;
 
 	private List<Vm> vmList;
+	private Map<Integer, Vm> idToVM;
 	private int nextVMId = 0;
 	private List<Vm> sortedVmOffers;
 	private Map<Vm, Integer> indexFreq;
@@ -55,6 +56,10 @@ public class PowerHEFTPolicy extends Policy {
 		public int compareTo(TaskRank o) {
 			return rank.get(task).compareTo(rank.get(o.task));
 		}
+
+		public String toString() {
+			return task.toString();
+		}
 	}
 
 	public PowerHEFTPolicy() {
@@ -65,20 +70,24 @@ public class PowerHEFTPolicy extends Policy {
 		schedules = new HashMap<>();
 		vmList = new ArrayList<>();
 		indexFreq = new HashMap<>();
+		idToVM = new HashMap<>();
 	}
 
 	@Override
 	public void doScheduling(long availableExecTime, VMOffers vmOffers) {
 		Log.printLine("Power HEFT planner running with " + tasks.size() + " tasks.");
 
+		Log.printLine("== Sorting the the VM options by MIPS ==");
 		sortedVmOffers = sortVmOfferList();
 		this.availableExecTime = availableExecTime;
-		averageBandwidth = calculateAverageBandwidth();
 
-		// VM instantiation phase
+		Log.printLine("== Instantiating the first VM, the fastest ==");
 		instantiateVM(sortedVmOffers.get(sortedVmOffers.size() - 1), sortedVmOffers.size() - 1); // Fastest
 
+		averageBandwidth = calculateAverageBandwidth();
+
 		// Prioritization phase
+		Log.printLine("== Calculating the HEFT parameters, computation and transfer costs ==");
 		updateComputationCosts();
 		updateTransferCosts();
 		updateRanks();
@@ -90,34 +99,44 @@ public class PowerHEFTPolicy extends Policy {
 
 		Task next;
 		while (taskRank.size() > 0) {
+			Log.printLine("== We have " + taskRank.size() + " tasks yet to schedule ==");
+			
 			// Sorting in non-DESCENDING order of rank
 			Collections.sort(taskRank);
+			Log.printLine("taskRank: " + taskRank);
 
 			Vm bestVm = vmList.get(0);
 			boolean isNewVm = false;
 			double bestEnergy = Double.MAX_VALUE;
 			int bestIndex = -1;
-
+			
+			next = taskRank.remove(taskRank.size() - 1).task;
+			Log.printLine("== Trying to schedule " + next + " ... ==");
 			for (Vm vm : vmList) {
-				next = taskRank.remove(taskRank.size() - 1).task;
+				Log.print("=== Trying to schedule " + next + " in " + vm + "... ");
+				
 				allocateTask(next, vm);
 				double energy = simulateAllocation(new ArrayList<>(taskRank));
-				deallocateTask(next, vm);
-				taskRank.add(new TaskRank(next));
-
+				deallocateTask(next);
+				
+				Log.printLine("Energy = " + energy + " ===");
 				if (energy < bestEnergy) {
+					Log.printLine("=== The best VM to schedule is now " + vm + " ===");
 					bestVm = vm;
 					bestEnergy = energy;
 				}
 			}
-
+			taskRank.add(new TaskRank(next));
+			
+			Log.printLine("== Trying to schedule " + next + " in a new VM ==");
 			for (int i = 0; i < sortedVmOffers.size(); i++) {
+				Log.print("== Trying option #" + i + " ... ");
 				Vm option = sortedVmOffers.get(i);
 
 				Vm newVm = instantiateVM(option, i);
 
 				updateComputationCosts();
-				updateTransferCosts();
+				updateRanks();
 				Collections.sort(taskRank);
 
 				next = taskRank.remove(taskRank.size() - 1).task;
@@ -126,35 +145,43 @@ public class PowerHEFTPolicy extends Policy {
 
 				double energy = simulateAllocation(new ArrayList<>(taskRank));
 
-				deallocateTask(next, newVm);
+				Log.printLine("Energy = " + energy + " ===");
+				
+				deallocateTask(next);
 				deinstantiateVM(newVm);
 				taskRank.add(new TaskRank(next));
 
 				if (energy < bestEnergy) {
+					Log.printLine("=== The best VM to schedule is a new one (Option #" + i + " ===");
 					bestVm = option;
 					bestIndex = i;
 					bestEnergy = energy;
 					isNewVm = true;
 				}
 			}
-			
+
 			if (isNewVm) {
+				Log.printLine("=== Instantiating a new VM ===");
 				bestVm = instantiateVM(bestVm, bestIndex);
 
 				updateComputationCosts();
 				updateTransferCosts();
 				Collections.sort(taskRank);
 			}
-			
+
 			next = taskRank.remove(taskRank.size() - 1).task;
+			Log.printLine("=== Allocating " + next + " definitely in " + bestVm + " ===");
 			allocateTask(next, bestVm);
-		}//End for
-		
+		}// End for
+
+		Log.printLine("=== Setting up the resultant data dependencies ===");
 		setDataDependencies();
 
 	}
 
 	private Vm instantiateVM(Vm instance, int vmIndexFreq) {
+//		Log.printLine("instantiateVM(" + instance + ", " + vmIndexFreq + ")");
+
 		Vm newVm = new Vm(nextVMId++, ownerId, instance.getMips(), instance.getNumberOfPes(),
 				instance.getRam(), instance.getBw(), instance.getSize(), "",
 				new CloudletSchedulerTimeShared());
@@ -165,11 +192,14 @@ public class PowerHEFTPolicy extends Policy {
 		schedulingTable.put(newVm.getId(), new ArrayList<Task>());
 		schedules.put(newVm, new ArrayList<Event>());
 		vmList.add(newVm);
+		idToVM.put(newVm.getId(), newVm);
 		indexFreq.put(newVm, vmIndexFreq);
 		return newVm;
 	}
 
 	private void deinstantiateVM(Vm vm) {
+//		Log.printLine("deinstantiateVM(" + vm + ")");
+
 		int i = 0;
 		while (provisioningInfo.get(i).getVm().getId() != vm.getId())
 			i++;
@@ -178,6 +208,7 @@ public class PowerHEFTPolicy extends Policy {
 		schedules.remove(vm);
 		provisioningInfo.remove(i);
 		vmList.remove(vm);
+		idToVM.remove(vm.getId());
 		indexFreq.remove(vm);
 	}
 
@@ -187,10 +218,14 @@ public class PowerHEFTPolicy extends Policy {
 	 * @return Average available bandwidth in Mbit/s
 	 */
 	private double calculateAverageBandwidth() {
+//		Log.printLine("calculateAverageBandwidth()");
+
 		double avg = 0.0;
 		for (Vm vm : vmList) {
 			avg += vm.getBw();
 		}
+
+		Log.printLine("averageBandwidth == " + avg / vmList.size());
 		return avg / vmList.size();
 	}
 
@@ -199,6 +234,8 @@ public class PowerHEFTPolicy extends Policy {
 	 * a task in a vm.
 	 */
 	private void updateComputationCosts() {
+//		Log.printLine("updateComputationCosts()");
+
 		Map<Vm, Double> costsVm;
 		for (Task task : tasks) {
 			if (computationCosts.containsKey(task))
@@ -215,6 +252,13 @@ public class PowerHEFTPolicy extends Policy {
 			}
 			computationCosts.put(task, costsVm);
 		}
+
+		// for(Task t: tasks){
+		// for (Vm vm: vmList){
+		// System.out.println(t + ", " + vm + ", " +
+		// computationCosts.get(t).get(vm));
+		// }
+		// }
 	}
 
 	/**
@@ -222,6 +266,8 @@ public class PowerHEFTPolicy extends Policy {
 	 * files from each parent to each child
 	 */
 	private void updateTransferCosts() {
+//		Log.printLine("updateTransferCosts()");
+
 		Map<Task, Double> taskTransferCosts;
 		// Initializing the matrix
 		for (Task task1 : tasks) {
@@ -243,6 +289,14 @@ public class PowerHEFTPolicy extends Policy {
 				transferCosts.get(parent).put(child, calculateTransferCost(parent, child));
 			}
 		}
+
+		// for(Task t1: tasks){
+		// for(Task t2:tasks){
+		// if(transferCosts.get(t1).get(t2) != 0.0)
+		// System.out.println(t1 + ", " + t2 + ", " +
+		// transferCosts.get(t1).get(t2));
+		// }
+		// }
 	}
 
 	/**
@@ -254,6 +308,9 @@ public class PowerHEFTPolicy extends Policy {
 	 * @return Transfer cost in seconds
 	 */
 	private double calculateTransferCost(Task parent, Task child) {
+		// Log.printLine("calculateTransferCost(" + parent + ", " + child +
+		// ")");
+
 		List<DataItem> parentOutput = (List<DataItem>) parent.getOutput();
 		List<DataItem> childInput = (List<DataItem>) child.getDataDependencies();
 
@@ -276,6 +333,8 @@ public class PowerHEFTPolicy extends Policy {
 	 * Invokes calculateRank for each task to be scheduled
 	 */
 	private void updateRanks() {
+//		Log.printLine("updateRanks()");
+
 		rank.clear();
 		for (Task task : tasks) {
 			calculateRank(task);
@@ -291,6 +350,8 @@ public class PowerHEFTPolicy extends Policy {
 	 * @return The rank
 	 */
 	private double calculateRank(Task task) {
+		// Log.printLine("calculateRank(" + task + ")");
+
 		if (rank.containsKey(task))
 			return rank.get(task);
 
@@ -313,6 +374,8 @@ public class PowerHEFTPolicy extends Policy {
 	}
 
 	private Double simulateAllocation(List<TaskRank> toSchedule) {
+//		Log.printLine("simulateAllocation(" + toSchedule + ")");
+
 		Task next;
 		for (int i = toSchedule.size() - 1; i >= 0; i--) {
 			next = toSchedule.get(i).task;
@@ -330,11 +393,9 @@ public class PowerHEFTPolicy extends Policy {
 	}
 
 	private void deallocateTask(Task task) {
-		Vm vm = getVmById(task.getVmId());
-		deallocateTask(task, vm);
-	}
+//		Log.printLine("deallocateTask(" + task + ")");
 
-	private void deallocateTask(Task task, Vm vm) {
+		Vm vm = idToVM.get(task.getVmId());
 		List<Event> schedule = schedules.get(vm);
 		int i = 0;
 		while (schedule.get(i).task.getId() != task.getId())
@@ -349,14 +410,9 @@ public class PowerHEFTPolicy extends Policy {
 		task.setOptIndexFreq(-1);
 	}
 
-	private Vm getVmById(int vmId) {
-		for (Vm vm : vmList)
-			if (vm.getId() == vmId)
-				return vm;
-		return null;
-	}
-
 	private double estimateEnergyConsumption() {
+//		Log.printLine("estimateEnergyConsumption()");
+
 		int vmIndexFreq;
 		long length = 0;
 		double energy = 0.0;
@@ -384,6 +440,8 @@ public class PowerHEFTPolicy extends Policy {
 	}
 
 	private void allocateTask(Task task) {
+//		Log.printLine("allocateTask(" + task + ")");
+
 		Vm chosenVM = null;
 		double earliestFinishTime = Double.MAX_VALUE;
 		double bestReadyTime = 0.0;
@@ -425,6 +483,8 @@ public class PowerHEFTPolicy extends Policy {
 	 * @pre All parent tasks are already scheduled
 	 */
 	private void allocateTask(Task task, Vm vm) {
+//		Log.printLine("allocateTask(" + task + ", " + vm + ")");
+
 		double finishTime;
 		double minReadyTime = 0.0;
 
@@ -460,6 +520,9 @@ public class PowerHEFTPolicy extends Policy {
 	 * @return The minimal finish time of the task in the vmn
 	 */
 	private double findFinishTime(Task task, Vm vm, double readyTime, boolean occupySlot) {
+//		Log.printLine("findFinishTime(" + task + ", " + vm + ", " + readyTime + ", " + occupySlot
+//				+ ")");
+
 		List<Event> sched = schedules.get(vm);
 		double computationCost = computationCosts.get(task).get(vm);
 		double start, finish;
@@ -539,6 +602,8 @@ public class PowerHEFTPolicy extends Policy {
 	}
 
 	private void setDataDependencies() {
+//		Log.printLine("setDataDependencies");
+
 		for (Task t : tasks) {
 			for (DataItem data : t.getDataDependencies()) {
 				if (!dataRequiredLocation.containsKey(data.getId())) {
@@ -556,6 +621,8 @@ public class PowerHEFTPolicy extends Policy {
 	}
 
 	private List<Vm> sortVmOfferList() {
+//		Log.printLine("sortVMOfferList()");
+
 		LinkedList<Vm> offers = new LinkedList<Vm>();
 
 		// sorts offers
