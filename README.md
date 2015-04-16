@@ -3,7 +3,7 @@ CloudSim_DVFS
 
 Experiments with the DVFS implementation of CloudSim
 
-The code is provided by: http://www.cloudbus.org/cloudsim/.
+The code was provided by: http://www.cloudbus.org/cloudsim/.
 This simulator was created by Tom Guerout et al.:
 Tom Guerout, Thierry Monteil, Georges Da Costa, Rodrigo N. Calheiros, Rajkumar Buyya, Mihai Alexandru. Energy-aware simulation with DVFS. Simulation Modelling Practice and Theory, Volume 39, pages 76-91, December 2013.
 
