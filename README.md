@@ -25,7 +25,7 @@ Instructions to run the simulations:
 simulation.rounds -> indicate how many times the simulation will be repeated.
 vm.offers -> indicate the file where the types of VMs will be used
 scheduling.policy -> indicate the class of the scheduling algorithm.
-dag.file -> indicate the structure of the workflow, in the DAG format (according to the model language used in the Pegasus WMS). You can find other examples in the Pegasus site.
+dag.file -> indicate the structure of the workflow, in the DAG format (according to the modeling language used in the Pegasus WMS). You can find other examples in the Pegasus site.
 
 The following properties are important to configure the proposed algorithms from Tom Guérout et al. and the Task Clustering strategy using these strategies.
 
