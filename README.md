@@ -38,7 +38,7 @@ dag.deadline doesn't work in the simulator. I don't know why.
 10. Run the workflow/Simulation.java file as a Java application.
 
 11. The log file will have this structure:
-<name of the used scheduler>,<name of the DAG file>,<value of the dag.optimize>, <value of the dag.modedvfs>, <consumed energy>, <spent time of the task>
+(name of the used scheduler),(name of the DAG file),(value of the dag.optimize), (value of the dag.modedvfs), (consumed energy), (spent time of the task)
 
 Each line has a round of the simulation.
 
