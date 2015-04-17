@@ -13,7 +13,7 @@ import java.util.Map.Entry;
 import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
-import sun.nio.cs.ext.ISCII91;
+//import sun.nio.cs.ext.ISCII91;
 
 /**
  * This class implements an "ideal" scheduler that creates 1 VM for each task.

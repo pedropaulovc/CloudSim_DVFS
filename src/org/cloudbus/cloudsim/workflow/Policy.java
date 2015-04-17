@@ -122,7 +122,7 @@ public abstract class Policy extends DefaultHandler {
 		System.out.println("-- Provisioning:");
 		for(ProvisionedVm vm:provisioningInfo){
 			System.out.println("-- VM id:"+vm.getVm().getId()+" RAM:"+vm.getVm().getRam()+
-					" start:"+vm.getStartTime()+" end:"+vm.getEndTime());
+					" start:"+vm.getStartTime()+" end:"+vm.getEndTime() +" mips: "+vm.getVm().getMips());
 		}
 		
 		System.out.println("-- Scheduling:");
@@ -137,13 +137,13 @@ public abstract class Policy extends DefaultHandler {
 		
 		System.out.println("-- Data located at:");
 		for (Entry<Integer, HashSet<Integer>> entry: dataRequiredLocation.entrySet()){
-			System.out.print("-- Data id#"+entry.getKey()+": ");
+			//System.out.print("-- Data id#"+entry.getKey()+": ");
 			for(int loc:entry.getValue()){
-				System.out.print(loc+" ");
+				//System.out.print(loc+" ");
 			}
-			System.out.println();
+			//System.out.println();
 		}
-		System.out.println();
+		//System.out.println();
 		
 		System.out.println("-------------------------------------------");
 	}
