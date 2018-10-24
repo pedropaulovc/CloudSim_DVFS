@@ -10,10 +10,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.cloudbus.cloudsim.CloudletSchedulerDynamicWorkload;
 import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
-//import sun.nio.cs.ext.ISCII91;
 
 /**
  * This class implements an "ideal" scheduler that creates 1 VM for each task.
@@ -23,7 +23,7 @@ import org.cloudbus.cloudsim.Vm;
  */
 
 
-public class DvfsPolicy_2 extends Policy {
+public class DvfsPolicy_3 extends Policy {
 			
 	List<Vm> vmOffersList;
 	OneCriticalPath TheCP;
@@ -31,61 +31,201 @@ public class DvfsPolicy_2 extends Policy {
  
 	 ArrayList<Task> optimzedTasks;
         
-        @Override
+    @Override
 	public void doScheduling(long availableExecTime, VMOffers vmOffers) {
 				
-		Enumeration<DataItem> dataIter = dataItems.elements();
-                String dvfs = Properties.MODEDVFS.getProperty();
+		Enumeration<DataItem> dataIter = dataItems.elements(); //vazio
+		String dvfs = Properties.MODEDVFS.getProperty();
+		
+		//nunca eh usado
 		while(dataIter.hasMoreElements()){
+		
 			DataItem item = dataIter.nextElement();
 			dataRequiredLocation.put(item.getId(), new HashSet<Integer>());
 		}
 		
+	
 		//===== 1.Determine available computation services =====
 		
 		//what's the best VM available?
 		vmOffersList = getVmOfferList();
                 
-                Log.printLine("Simulation optimized : " + optimizeScheduling);
-                
-                if(optimizeScheduling) 
-                {
-                    TheCP=findLongestCriticalPath();  
-                    if(dvfs.equalsIgnoreCase("optimal"))
-                        optimzedTasks=OptimizeGraph(vmOffers);
-                }
-                
+        Log.printLine("Simulation optimized : " + optimizeScheduling);
+        
+        if(optimizeScheduling) 
+        {
+            TheCP=findLongestCriticalPath();  
+            if(dvfs.equalsIgnoreCase("optimal"))
+                optimzedTasks=OptimizeGraph(vmOffers);
+        }
+        
+        double prevVm = 0;
+        
 		for(Task ti:tasks){
 			
-                        Vm instance = null;
-                        if(optimizeScheduling && dvfs.equalsIgnoreCase("optimal"))
-                        {
-                           instance = findBestAvailableVm(ti) ; 
-                        }else
-                        {
-                            //use only the best available VM, one task per VM
-                            instance = vmOffersList.get(vmOffersList.size()-1);
-                        }
+            Vm instance = null;
+            
+            if(optimizeScheduling && dvfs.equalsIgnoreCase("optimal"))
+            {
+               instance = findBestAvailableVm(ti) ; 
+            }
+            else
+            {
+                //use only the best available VM, one task per VM
+                instance = vmOffersList.get(vmOffersList.size()-1);
+            }
                               
-                        
-                        
-			Vm newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
-			int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
+           
+            Vm newVm = null;
+            System.out.println("Scheduling task "+ti.getId()+" - prevvm "+prevVm);
+            if(ti.getId() > 0)
+            System.out.println(" Parents................... "+isParent(ti, tasks.get(ti.getId()-1)));
+            
+            
+           //if(prevVm == 941.2 && instance.getMips() == 941.2)
+            if(prevVm == 941.2 && instance.getMips() == 941.2 && isParent(ti, tasks.get(ti.getId()-1)) == false) //for sipht
+           	//if(prevVm == 941.2 && instance.getMips() == 941.2 && ti.getId() <=17) //Nao pode usar a vm 0 com 0 e 1 pq 1 nao precisa das tarefas q zero precisa
+            {
+            	
+            	//provisioningInfo.get(vmId-1).getVm();
+            	
+            	int key = vmId-1;
+	            vmId--;
+            	
+	            ArrayList<Task> tempList = new ArrayList<Task>();
+            	tempList = schedulingTable.get(key);
+            	tempList.add(ti);
+            	
+            	instance = vmOffersList.get(vmOffersList.size()-1);
+            	
+            	
+	            
+            	newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
+	            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
+				
+	            
+	            
+	            provisioningInfo.remove(key);
+            	schedulingTable.remove(key);
+            	
+            	
+            	
+	            provisioningInfo.add(new ProvisionedVm(newVm,0,availableExecTime,cost));
+            	schedulingTable.put(newVm.getId(), tempList);
+            	
+            	ti.setVmId(vmId);
+            	System.out.println("grouped "+(ti.getId()-1)+" - "+(ti.getId())+" - mips "+instance.getMips());
+            	prevVm = instance.getMips();
+            	
+            	
+            }
+            else
+            {
+            	
+				newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
+	            //Vm newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerDynamicWorkload(instance.getMips(),instance.getNumberOfPes() ));
+	            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
+				provisioningInfo.add(new ProvisionedVm(newVm,0,availableExecTime,cost));
+				
+				
+				
+				ArrayList<Task> tList = new ArrayList<Task>();
+				tList.add(ti);
+				schedulingTable.put(newVm.getId(), tList);
+	            
+				
+				
+				
+				ti.setVmId(newVm.getId());
+				prevVm = instance.getMips();
+            }
+/*
+        	
+           newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
+            //Vm newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerDynamicWorkload(instance.getMips(),instance.getNumberOfPes() ));
+            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
 			provisioningInfo.add(new ProvisionedVm(newVm,0,availableExecTime,cost));
-			/*
-			Vm newVm2 = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
-			int cost2 = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
-			provisioningInfo.add(new ProvisionedVm(newVm2,0,availableExecTime,cost2));
 			
-			schedulingTable.put(newVm2.getId(),new ArrayList<Task>());
-			*/
+			
 			
 			ArrayList<Task> tList = new ArrayList<Task>();
 			tList.add(ti);
 			schedulingTable.put(newVm.getId(), tList);
+            
+	
+			
+			
 			ti.setVmId(newVm.getId());
 			
+			
+            
+System.out.println("Scheduling task "+ti.getId()+" - prevvm "+prevVm);
+            
+            //if(prevVm == 2000 && instance.getMips() == 2000 && ti.getId() <=4 && ti.getId()-1 >= 0)
+           	if(prevVm == 941.2 && instance.getMips() == 941.2 && ti.getId() <=16 && ti.getId()-1 > 0) //Nao pode usar a vm 0 com 0 e 1 pq 1 nao precisa das tarefas q zero precisa
+            {
+            	
+            	//provisioningInfo.get(vmId-1).getVm();
+            	
+            	int key = vmId-1;
+	            vmId--;
+            	
+	            ArrayList<Task> tempList = new ArrayList<Task>();
+            	tempList = schedulingTable.get(key);
+            	tempList.add(ti);
+            	
+            	instance = vmOffersList.get(vmOffersList.size()-1);
+            	
+            	
+	            
+            	newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
+	            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
+				
+	            
+	            
+	            provisioningInfo.remove(key);
+            	schedulingTable.remove(key);
+            	
+            	
+            	
+	            provisioningInfo.add(new ProvisionedVm(newVm,0,availableExecTime,cost));
+            	schedulingTable.put(newVm.getId(), tempList);
+            	
+            	ti.setVmId(vmId);
+            	System.out.println("grouped "+(ti.getId()-1)+" - "+(ti.getId())+" - mips "+instance.getMips());
+            	prevVm = instance.getMips();
+            	
+            	
+            }
+            else
+            {
+            	
+				newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerTimeShared());
+	            //Vm newVm = new Vm(vmId,ownerId,instance.getMips(),instance.getNumberOfPes(),instance.getRam(),instance.getBw(),instance.getSize(),"",new CloudletSchedulerDynamicWorkload(instance.getMips(),instance.getNumberOfPes() ));
+	            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
+				provisioningInfo.add(new ProvisionedVm(newVm,0,availableExecTime,cost));
+				
+				
+				
+				ArrayList<Task> tList = new ArrayList<Task>();
+				tList.add(ti);
+				schedulingTable.put(newVm.getId(), tList);
+	            
+				
+				
+				
+				ti.setVmId(newVm.getId());
+				prevVm = instance.getMips();
+            }
+			
+        	
+            
+          //  System.out.println("my test VM "+vmId+" - Task "+ti.getId());
+            */
+            
+            
 			//set data dependencies info
+//arrumar qdo faz clustering de vms
 			for(DataItem data:ti.getDataDependencies()){
 				if(!dataRequiredLocation.containsKey(data.getId())){
 					dataRequiredLocation.put(data.getId(), new HashSet<Integer>());
@@ -99,11 +239,28 @@ public class DvfsPolicy_2 extends Policy {
 				}
 			}
 			
+			
 			vmId++;
 		}
+		
+				
                
 	}
         
+    //check if t1 is parent of t2
+    public boolean isParent(Task t1, Task t2)
+    {
+    	for(Task parent2: t2.getParents())
+    	{
+    		if(parent2.getId() == t1.getId())
+    		{
+    			return true;
+    				
+    		}
+    	}
+    	
+    	return false;
+    }
         
         public boolean allTaskDefined()
         {
@@ -153,29 +310,27 @@ public class DvfsPolicy_2 extends Policy {
               
               if(!TheCP.getTasks().contains(ti))
               {
-                  /*if(tmpIndexFreq > vmOffersList.size() -1)
-                      tmpIndexFreq = vmOffersList.size() -1;
-                  */
             	  //System.out.println("Executing.... 1 "+tmpIndexFreq);
                   if(tmpIndexFreq > vmOffersList.size() -1)
                       tmpIndexFreq = vmOffersList.size() -1;
                   else if(tmpIndexFreq < 0) ///BUG
                 	  tmpIndexFreq = 0;
-                  
+                	  
                   tmpIndexFreq = vmOffersList.size() - tmpIndexFreq-1;
-                  
-                  
+                 // System.out.println("Executing.... 2 "+tmpIndexFreq);
               }
               else
               {
                   tmpIndexFreq =  vmOffersList.size() -1;
-          //        Log.printLine("tache critique , tmpindex = " + tmpIndexFreq);
+                  //Log.printLine("tache critique , tmpindex = " + tmpIndexFreq);
               }
               
-              System.out.println("------------freq " +tmpIndexFreq);
+             
               
               ti.setOptIndexFreq(tmpIndexFreq);
               ti.setOptExecTime(ti.getOptExecTime()+(ti.getOptExecTime()*vmOffers.valuePerf(tmpIndexFreq)/100));
+             
+              
               //OptimizedTasks.add(ti);
           /*    Log.printLine("task " + ti.getId() + " slack time = " + ti.getSlackTime() + " ratio SLACK/EXEC : " + ti.getRatioSlackExec() + " => index freq  : " + tmpIndexFreq);
               for(Task ti_ : SortTasks)

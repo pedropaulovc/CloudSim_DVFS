@@ -150,8 +150,9 @@ public class WorkflowDatacenter extends Datacenter {
 			int userId = cl.getUserId();
 			int vmId = cl.getVmId();
 			Host host = getVmAllocationPolicy().getHost(vmId, userId);
+			System.out.println("-----------vm ---------- "+vmId);
 			Vm vm = host.getVm(vmId, userId);
-			CloudletScheduler scheduler = vm.getCloudletScheduler();
+			CloudletScheduler scheduler = vm.getCloudletScheduler();			
 			double estimatedFinishTime = scheduler.cloudletSubmit(cl);
 			if (estimatedFinishTime<QUANTUM) estimatedFinishTime=QUANTUM;
 			send(getId(),estimatedFinishTime,CloudSimTags.VM_DATACENTER_EVENT);

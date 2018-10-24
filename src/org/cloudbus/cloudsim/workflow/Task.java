@@ -339,4 +339,8 @@ public class Task {
     public double getBasicExecTime() {
         return BasicExecTime;
     }
+    
+    public String toString(){
+    	return "T" + getCloudlet().getCloudletId();
+    }
 }

@@ -15,7 +15,7 @@ import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 
-public class HEFTPolicy extends Policy {
+public class HEFTPolicy_3 extends Policy {
 	private Map<Task, Map<Vm, Double>> computationCosts;
 	private Map<Task, Map<Task, Double>> transferCosts;
 	private Map<Task, Double> rank;
@@ -57,7 +57,7 @@ public class HEFTPolicy extends Policy {
 		}
 	}
 
-	public HEFTPolicy() {
+	public HEFTPolicy_3() {
 		computationCosts = new HashMap<>();
 		transferCosts = new HashMap<>();
 		rank = new HashMap<>();
@@ -92,129 +92,13 @@ public class HEFTPolicy extends Policy {
 
 		// Selection phase
 		allocateTasks();
-		
-		//---- consolidation...
-		/*
-		Vm prevVm = vmList.get(0);
-		double slowerMips = vmOffersList.get(0).getMips() ;
-		double fasterMips = vmOffersList.get(4).getMips() ;
-		int size = provisioningInfo.size();
-		ArrayList<ProvisionedVm> tempProvInfo = provisioningInfo;
-		
-		for(int i = 0; i < size; i++)
-		{
-			ProvisionedVm vm = tempProvInfo.get(i);
-			
-			if(prevVm.getMips() == slowerMips && vm.getVm().getMips() == slowerMips)
-			{
-				System.out.println("--------------- consolidation ---------------");
-				System.out.println("-- VM id:"+vm.getVm().getId()+" RAM:"+vm.getVm().getRam()+
-						" start:"+vm.getStartTime()+" end:"+vm.getEndTime() +" mips: "+vm.getVm().getMips());
-				System.out.println("-- PrevVM id:"+prevVm.getId()+" RAM:"+prevVm.getRam()+" mips: "+prevVm.getMips());
-				
-				
-				
-				//----------- migrating the task of previous vm for the current vm
-			
-				int keyPrev = prevVm.getId();
-	            ArrayList<Task> tempPrevList = schedulingTable.get(keyPrev);
-	        	
-	            int keyCurrent = vm.getVm().getId();
-	            ArrayList<Task> tempCurrentList = schedulingTable.get(keyCurrent);
-	            
-	            for(Task t:tempCurrentList)
-	            {
-	            	tempPrevList.add(t);
-	            }
-	            
-	            
-		        for(Task t :tempCurrentList)
-				{
-					//System.out.println("Task "+t.getId()+" migrating...");
-					
-					// set data dependencies info
-	        		for (DataItem data : t.getDataDependencies()) {
-	        			if (!dataRequiredLocation.containsKey(data.getId())) {
-	        				dataRequiredLocation.put(data.getId(), new HashSet<Integer>());
-	        			}
-	        			dataRequiredLocation.get(data.getId()).remove(keyCurrent);
-	        			dataRequiredLocation.get(data.getId()).add(keyPrev);
-	        		}
-
-	        		for (DataItem data : t.getOutput()) {
-	        			if (!dataRequiredLocation.containsKey(data.getId())) {
-	        				dataRequiredLocation.put(data.getId(), new HashSet<Integer>());
-	        			}
-	        		}
-	        		
-	        		t.setVmId(keyPrev);
-				}
-		        
-		        
-		        
-		        
-		      //----------- deleting the previous vm ------------
-		       
-		       // provisioningInfo.remove(keyPrev);
-		       // schedulingTable.remove(keyPrev);
-		       // vmList.remove(keyPrev);
-		        	
-		        //	provisioningInfo.remove(keyCurrent-countMigration); //need just to update
-			    //    schedulingTable.remove(keyCurrent);
-			     //   vmList.remove(keyCurrent-countMigration);
-		        
-		        
-		        
-		        
-		        
-	        	Vm instanceFaster = vmOffersList.get(vmOffersList.size()-1);       	        	
-	            
-	        	Vm newVm = new Vm(keyPrev,ownerId,instanceFaster.getMips(),instanceFaster.getNumberOfPes(),instanceFaster.getRam(),instanceFaster.getBw(),instanceFaster.getSize(),"",new CloudletSchedulerTimeShared());
-	            int cost = vmOffers.getCost(newVm.getMips(), newVm.getRam(), newVm.getBw());
-				
-	            
-	            
-	           
-	            provisioningInfo.set(keyPrev, new ProvisionedVm(newVm, 0, availableExecTime, cost));
-	            
-	            schedulingTable.remove(keyPrev);
-			   // vmList.remove(keyPrev);
-	            
-			    schedulingTable.put(keyPrev, tempPrevList);
-			    
-			    schedulingTable.remove(keyCurrent);
-			    schedulingTable.put(keyCurrent, new ArrayList<Task>());
-	        	
-	        	prevVm = newVm;
-	        //	i++;
-	        //	size--;
-	        //	countMigration++;
-	        
-				//Vm instanceFaster = vmOffersList.get(vmOffersList.size()-1);     
-				//Vm newVm = new Vm(nextVmId,ownerId,instanceFaster.getMips(),instanceFaster.getNumberOfPes(),instanceFaster.getRam(),instanceFaster.getBw(),instanceFaster.getSize(),"",new CloudletSchedulerTimeShared());
-				//prevVm = newVm;
-			}
-			else
-			{
-				prevVm = vm.getVm();
-			}
-			
-			//prevVm = vm.getVm();
-				
-		}
-		*/
-		
 	}
 
 	private void instantiateVms() {
 		// |V| - 1 slow VMs
 		
-		int numberNodes = 30;
-		
-		int numberFastVMs =  1;
-		int numberSlowVMs = tasks.size() - numberFastVMs;
-		/*
-		System.out.println("Faster - "+numberFastVMs+" - slower "+numberSlowVMs);
+		/*int numberFastVMs = 1;
+		int numberSlowVMs = tasks.size() - 1;
 		
 		for (int i = 0; i < numberFastVMs; i++) {
 			instantiateVM(vmOffersList.get(vmOffersList.size() - 1), vmOffersList.size() - 1);
@@ -222,34 +106,11 @@ public class HEFTPolicy extends Policy {
 
 		for (int i = 0; i < numberSlowVMs; i++) {
 			instantiateVM(vmOffersList.get(0), 0);
-		}
-		/*
+		}*/
+		
 		for (int i = 0; i < 30; i++) {
-			instantiateVM(vmOffersList.get(0), 0);
+			instantiateVM(vmOffersList.get(4), 4);
 		}
-		*/
-		
-		for (int i = 0; i < tasks.size(); i++) {
-			int random = (int) (Math.random() *2); 
-			System.out.println("random ..... " +random);
-			
-			if(random == 1) random = vmOffersList.size() - 1;
-			
-			instantiateVM(vmOffersList.get(random), random);
-		}
-		
-		/*
-		int j = 0;
-		for (int i = 0; i < 20; i++) {
-			
-			j = 0;
-			instantiateVM(vmOffersList.get(j), j++);
-			instantiateVM(vmOffersList.get(j), j++);
-			instantiateVM(vmOffersList.get(j), j++);
-			instantiateVM(vmOffersList.get(j), j++);
-			instantiateVM(vmOffersList.get(j), j++);
-		}
-		*/
 		
 	}
 
@@ -406,7 +267,7 @@ public class HEFTPolicy extends Policy {
 		
 		
 		for (TaskRank tr : taskRank) {
-			Log.printLine(" - "+tr.task.getId() +" - rank "+tr.rank);
+			Log.print(" - "+tr.task.getId());
 			allocateTask(tr.task);
 		}
 
@@ -422,9 +283,9 @@ public class HEFTPolicy extends Policy {
 	 */
 	private void allocateTask(Task task) {
 		Vm chosenVM = null;
-		double earliestFinishTime = Double.MAX_VALUE;
+		double earliestStartTime = Double.MAX_VALUE;
 		double bestReadyTime = 0.0;
-		double finishTime;
+		double startTime;
 
 		for (Vm vm : vmList) {
 			double minReadyTime = 0.0;
@@ -442,14 +303,14 @@ public class HEFTPolicy extends Policy {
 
 			//Log.printLine("ReadTime "+minReadyTime);
 			
-			finishTime = findFinishTime(task, vm, minReadyTime, false);
+			startTime = findStartTime(task, vm, minReadyTime, false);
 
 			
 			
 			
-			if (finishTime < earliestFinishTime) {
+			if (startTime < earliestStartTime) {
 				bestReadyTime = minReadyTime;
-				earliestFinishTime = finishTime;
+				earliestStartTime = startTime;
 				chosenVM = vm;
 			}
 		}
@@ -457,7 +318,7 @@ public class HEFTPolicy extends Policy {
 		
 		
 		
-		findFinishTime(task, chosenVM, bestReadyTime, true);
+		double earliestFinishTime = findFinishTime(task, chosenVM, bestReadyTime, true);
 		earliestFinishTimes.put(task, earliestFinishTime);
 
 		task.setVmId(chosenVM.getId());
@@ -479,6 +340,94 @@ public class HEFTPolicy extends Policy {
 		}
 	}
 
+	/**
+	 * Finds the best time slot available to minimize the finish time of the
+	 * given task in the vm with the constraint of not scheduling it before
+	 * readyTime. If occupySlot is true, reserves the time slot in the schedule.
+	 * 
+	 * @param task
+	 *            The task to have the time slot reserved
+	 * @param vm
+	 *            The vm that will execute the task
+	 * @param readyTime
+	 *            The first moment that the task is available to be scheduled
+	 * @param occupySlot
+	 *            If true, reserves the time slot in the schedule.
+	 * @return The minimal finish time of the task in the vmn
+	 */
+	private double findStartTime(Task task, Vm vm, double readyTime, boolean occupySlot) {
+		List<Event> sched = schedules.get(vm);
+		double computationCost = computationCosts.get(task).get(vm);
+		double start, finish;
+		int pos;
+
+		
+		
+		if (sched.size() == 0) {
+			if (occupySlot)
+				sched.add(new Event(readyTime, readyTime + computationCost));
+			return readyTime;
+		}
+
+		if (sched.size() == 1) {
+			if (readyTime >= sched.get(0).finish) {
+				pos = 1;
+				start = readyTime;
+			} else if (readyTime + computationCost <= sched.get(0).start) {
+				pos = 0;
+				start = readyTime;
+			} else {
+				pos = 1;
+				start = sched.get(0).finish;
+			}
+
+			if (occupySlot)
+				sched.add(pos, new Event(start, start + computationCost));
+			return start;
+		}
+
+		// Trivial case: Start after the latest task scheduled
+		start = Math.max(readyTime, sched.get(sched.size() - 1).finish);
+		finish = start + computationCost;
+		int i = sched.size() - 1;
+		int j = sched.size() - 2;
+		pos = i + 1;
+		while (j >= 0) {
+			Event current = sched.get(i);
+			Event previous = sched.get(j);
+
+			if (readyTime > previous.finish) {
+				if (readyTime + computationCost <= current.start) {
+					start = readyTime;
+					finish = readyTime + computationCost;
+				}
+
+				break;
+			}
+
+			if (previous.finish + computationCost <= current.start) {
+				start = previous.finish;
+				finish = previous.finish + computationCost;
+				pos = i;
+			}
+
+			i--;
+			j--;
+		}
+
+		if (readyTime + computationCost <= sched.get(0).start) {
+			pos = 0;
+			start = readyTime;
+
+			if (occupySlot)
+				sched.add(pos, new Event(start, start + computationCost));
+			return start;
+		}
+		if (occupySlot)
+			sched.add(pos, new Event(start, finish));
+		return start;
+	}
+	
 	/**
 	 * Finds the best time slot available to minimize the finish time of the
 	 * given task in the vm with the constraint of not scheduling it before

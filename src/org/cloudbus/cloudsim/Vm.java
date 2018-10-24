@@ -635,5 +635,7 @@ public class Vm {
         sizeHasBeenModified = SizeHasBeenModified_;
     }
 
-
+    public String toString(){
+    	return "VM" + getId();
+    }
 }
